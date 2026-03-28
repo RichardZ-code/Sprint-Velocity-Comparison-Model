@@ -1,0 +1,2104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bolt 19.19 vs Tebogo 19.18</title>
+  <style>
+    :root {
+      --bg: #0f1517;
+      --bg-soft: #172023;
+      --panel: rgba(12, 18, 21, 0.88);
+      --panel-strong: rgba(11, 16, 19, 0.95);
+      --line: rgba(255, 255, 255, 0.12);
+      --line-strong: rgba(255, 255, 255, 0.2);
+      --text: #eff3f0;
+      --muted: #a9b7b0;
+      --track: #ab4b3a;
+      --track-dark: #883a2d;
+      --turf: #40644f;
+      --turf-dark: #2c4738;
+      --bolt: #fcd116;
+      --bolt-soft: rgba(252, 209, 22, 0.16);
+      --tebogo: #75aadb;
+      --tebogo-soft: rgba(117, 170, 219, 0.16);
+      --accent: #d7dfda;
+      --danger: #f47f72;
+      --shadow: rgba(0, 0, 0, 0.34);
+      --good: #91d08b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at top, rgba(82, 114, 121, 0.18), transparent 26%),
+        linear-gradient(180deg, #182226 0%, #10181b 38%, #0a1012 100%);
+      color: var(--text);
+      font-family: "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      height: 100%;
+      width: 100%;
+      gap: 0;
+    }
+
+    .viewer {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(232, 240, 243, 0.04), transparent 28%),
+        radial-gradient(circle at 15% 18%, rgba(255, 255, 255, 0.06), transparent 22%);
+    }
+
+    #raceCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .topbar {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .event-card,
+    .live-card,
+    .mini-control,
+    .controls-card,
+    .panel {
+      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(25, 34, 38, 0.92), rgba(13, 18, 21, 0.92));
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 38px var(--shadow);
+    }
+
+    .event-card,
+    .live-card {
+      border-radius: 16px;
+      padding: 10px 12px;
+      max-width: 440px;
+    }
+
+    .mini-control {
+      pointer-events: auto;
+      border-radius: 14px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+
+    .mini-control button {
+      min-width: 0;
+      padding: 7px 12px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #c7d0cb;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .event-card h1 {
+      margin: 0;
+      font-size: clamp(18px, 2vw, 26px);
+      line-height: 1.08;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+
+    .event-card p,
+    .meta-row,
+    .panel-note,
+    .toggle-row label,
+    .small-label,
+    .legend,
+    .table-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .event-card p {
+      margin: 6px 0 0;
+      max-width: 42ch;
+      font-size: 12px;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .meta-chip {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 11px;
+      color: #d5ddd8;
+      white-space: nowrap;
+    }
+
+    .live-card {
+      min-width: 232px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .live-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .live-metric {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .live-metric .value {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.05;
+      color: #f6f8f6;
+    }
+
+    .live-metric .small-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .lane-tags {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .runner-tag {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      min-width: 148px;
+      padding: 7px 10px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(10, 14, 17, 0.86);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24);
+      transition: opacity 140ms linear;
+    }
+
+    .runner-tag[data-athlete="bolt"] {
+      border-color: rgba(252, 209, 22, 0.42);
+    }
+
+    .runner-tag[data-athlete="tebogo"] {
+      border-color: rgba(117, 170, 219, 0.42);
+    }
+
+    .runner-tag .name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+
+    .runner-tag .detail {
+      margin-top: 4px;
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .controls-card {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      border-radius: 16px;
+      padding: 10px 12px 12px;
+      pointer-events: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .controls-top,
+    .controls-bottom,
+    .timeline-row,
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .controls-top {
+      justify-content: space-between;
+    }
+
+    .button-row,
+    .select-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button,
+    select {
+      appearance: none;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      min-width: 68px;
+      font-weight: 600;
+    }
+
+    button:hover,
+    select:hover,
+    input[type="range"]:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .primary {
+      background: linear-gradient(180deg, rgba(237, 244, 239, 0.14), rgba(255, 255, 255, 0.06));
+    }
+
+    .step {
+      min-width: 58px;
+    }
+
+    .timeline-row {
+      align-items: center;
+    }
+
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      width: 100%;
+    }
+
+    input[type="range"] {
+      flex: 1 1 240px;
+      accent-color: #d7dfda;
+    }
+
+    .analysis {
+      min-width: 0;
+      min-height: 0;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: linear-gradient(180deg, rgba(18, 24, 28, 0.94), rgba(11, 14, 17, 0.98));
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .panel {
+      min-width: 0;
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(24, 31, 35, 0.94), rgba(12, 17, 20, 0.96));
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+    }
+
+    .panel h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0.03em;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-cell {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .summary-cell strong {
+      display: block;
+      font-size: 21px;
+      line-height: 1.05;
+      margin-top: 2px;
+    }
+
+    .summary-cell.good strong {
+      color: var(--good);
+    }
+
+    .summary-cell.warn strong {
+      color: var(--danger);
+    }
+
+    .chart {
+      display: block;
+    }
+
+    .chart[hidden] {
+      display: none;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-line {
+      width: 18px;
+      height: 0;
+      border-top-width: 3px;
+      border-top-style: solid;
+      border-radius: 999px;
+    }
+
+    .table-wrap {
+      max-height: 320px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: rgba(12, 18, 21, 0.96);
+      z-index: 1;
+      white-space: normal;
+      line-height: 1.2;
+    }
+
+    th,
+    td {
+      padding: 6px 5px;
+      text-align: right;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    tbody td {
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    tbody tr.anchor {
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    tbody tr.active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .bolt-text {
+      color: var(--bolt);
+    }
+
+    .tebogo-text {
+      color: var(--tebogo);
+    }
+
+    .toggle-row {
+      gap: 12px;
+    }
+
+    .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-row input,
+    .toggle-row select {
+      cursor: pointer;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: #dbe2de;
+    }
+
+    .phase-line {
+      font-size: 13px;
+      margin-top: 8px;
+      color: #dbe2de;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1280px) {
+      .app {
+        grid-template-columns: minmax(0, 1fr) 330px;
+      }
+    }
+
+    @media (max-width: 1080px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(66vh, 1fr) auto;
+        min-height: 100%;
+      }
+
+      .analysis {
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .live-card {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar,
+      .controls-card,
+      .analysis {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .topbar {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+      }
+
+      .controls-card {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+      }
+
+      .summary-grid,
+      .live-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .runner-tag {
+        min-width: 118px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="viewer">
+      <canvas id="raceCanvas"></canvas>
+      <div class="overlay">
+        <div class="topbar">
+          <div class="event-card" id="eventCard">
+            <div class="eyebrow">200m Replay Analysis</div>
+            <h1>Bolt 19.19 vs Tebogo 19.18</h1>
+            <p>Broadcast-style side-by-side reconstruction using one shared timing model. Bolt keeps the superior bend; Tebogo closes almost all of it on the straight.</p>
+            <div class="event-meta">
+              <span class="meta-chip">Default view: TV replay</span>
+              <span class="meta-chip">Track geometry: standard 200m half-lap</span>
+              <span class="meta-chip">Bolt lane 5 / Tebogo lane 7</span>
+            </div>
+          </div>
+          <div class="mini-control">
+            <button id="topReplay" type="button">Replay</button>
+          </div>
+          <div class="live-card" id="liveCard">
+            <div class="eyebrow">Live Comparison</div>
+            <div class="live-grid">
+              <div class="live-metric">
+                <span class="small-label">Race Time</span>
+                <div class="value" id="liveTime">0.00</div>
+              </div>
+              <div class="live-metric">
+                <span class="small-label">Leader</span>
+                <div class="value" id="leaderText">Bolt</div>
+              </div>
+              <div class="live-metric">
+                <span class="small-label">Gap</span>
+                <div class="value" id="gapText">0.00 m</div>
+              </div>
+            </div>
+            <div class="phase-line" id="phaseText">Waiting on the gun. Bolt reacts first on paper; Tebogo’s model is built to arrive later and harder.</div>
+          </div>
+        </div>
+
+        <div class="lane-tags">
+          <div class="runner-tag" id="tagBolt" data-athlete="bolt">
+            <div class="name"><span class="swatch" style="background: var(--bolt);"></span>Usain Bolt</div>
+            <div class="detail"><span id="tagBoltDistance">0.0 m</span><span id="tagBoltVelocity">0.00 m/s</span></div>
+          </div>
+          <div class="runner-tag" id="tagTebogo" data-athlete="tebogo">
+            <div class="name"><span class="swatch" style="background: var(--tebogo);"></span>Letsile Tebogo</div>
+            <div class="detail"><span id="tagTebogoDistance">0.0 m</span><span id="tagTebogoVelocity">0.00 m/s</span></div>
+          </div>
+        </div>
+
+        <div class="controls-card" id="timelinePanel">
+          <div class="controls-top">
+            <div class="button-row">
+              <button id="playPause" class="primary" type="button">Pause</button>
+              <button id="stepBack" class="step" type="button">-0.05s</button>
+              <button id="stepForward" class="step" type="button">+0.05s</button>
+            </div>
+            <div class="select-row">
+              <label class="small-label" for="speedSelect">Speed</label>
+              <select id="speedSelect">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option>
+                <option value="2">2x</option>
+              </select>
+              <label class="small-label" for="cameraMode">Camera</label>
+              <select id="cameraMode">
+                <option value="tv" selected>TV Replay</option>
+                <option value="tactical">Tactical Top</option>
+                <option value="finish">Finish Focus</option>
+              </select>
+            </div>
+          </div>
+          <div class="timeline-row">
+            <span class="small-label">Timeline</span>
+            <input id="timeline" type="range" min="0" max="19.19" step="0.01" value="0" />
+          </div>
+          <div class="timeline-labels">
+            <span id="timelineStart">0.00 / 200m</span>
+            <span id="timelineMid">Straight entry 115.6m</span>
+            <span id="timelineEnd">Finish 19.19 / 19.18</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="analysis">
+      <section class="panel">
+        <h2>Model Status</h2>
+        <div class="summary-grid">
+          <div class="summary-cell">
+            <span class="small-label">Bolt at 100m</span>
+            <strong id="boltHalf">9.92</strong>
+            <span class="panel-note">Official direct anchor</span>
+          </div>
+          <div class="summary-cell">
+            <span class="small-label">Tebogo at 100m</span>
+            <strong id="tebogoHalf">10.02</strong>
+            <span class="panel-note">Hypothetical from Paris 2024 baseline</span>
+          </div>
+          <div class="summary-cell warn">
+            <span class="small-label">Bolt final 100m</span>
+            <strong id="boltSecondHalf">9.27</strong>
+            <span class="panel-note">Still the superior bend-to-100</span>
+          </div>
+          <div class="summary-cell good">
+            <span class="small-label">Tebogo final 100m</span>
+            <strong id="tebogoSecondHalf">9.16</strong>
+            <span class="panel-note">Modelled closing edge</span>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge">Bolt 10m table: inferred between official 50m anchors</span>
+          <span class="badge">Tebogo 19.18: hypothetical, built from official Paris 2024 10m pattern</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Display Toggles</h2>
+        <div class="toggle-row">
+          <label><input id="toggleMarkers" type="checkbox" checked /> 10m markers</label>
+          <label><input id="toggleVelocity" type="checkbox" checked /> velocity chart</label>
+          <label><input id="toggleGap" type="checkbox" checked /> gap chart</label>
+          <label><input id="toggleTable" type="checkbox" checked /> split table</label>
+        </div>
+        <div class="toggle-row" style="margin-top: 8px;">
+          <label><input id="toggleEventCard" type="checkbox" checked /> replay analysis</label>
+          <label><input id="toggleLiveCard" type="checkbox" checked /> live comparison</label>
+          <label><input id="toggleTimelinePanel" type="checkbox" checked /> bottom timeline</label>
+        </div>
+        <div class="panel-note" style="margin-top: 10px;">
+          Broadcast view stays clean by default. The analysis layers are all driven from the same 10m cumulative model used by the animation.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Live Race State</h2>
+        <div class="summary-grid">
+          <div class="summary-cell">
+            <span class="small-label">Lead at 50m</span>
+            <strong id="fiftyLead">Bolt +0.05s</strong>
+            <span class="panel-note">Model anchor check</span>
+          </div>
+          <div class="summary-cell">
+            <span class="small-label">Lead at 150m</span>
+            <strong id="oneFiftyLead">Bolt +0.06s</strong>
+            <span class="panel-note">Straight is closing it</span>
+          </div>
+          <div class="summary-cell">
+            <span class="small-label">Current distance gap</span>
+            <strong id="distanceGapLive">0.00 m</strong>
+            <span class="panel-note">Positive means Tebogo ahead</span>
+          </div>
+          <div class="summary-cell">
+            <span class="small-label">Projected crossover</span>
+            <strong id="crossoverText">At the line</strong>
+            <span class="panel-note">From the modelled gap curve</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel chart" id="velocityPanel">
+        <h2>Velocity Approximation</h2>
+        <svg id="velocityChart" viewBox="0 0 320 150" aria-label="Velocity chart"></svg>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-line" style="border-top-color: var(--bolt);"></span>Bolt</span>
+          <span class="legend-item"><span class="legend-line" style="border-top-color: var(--tebogo);"></span>Tebogo</span>
+          <span class="legend-item"><span class="legend-line" style="border-top-color: rgba(255,255,255,0.22); border-top-style: dashed;"></span>cursor</span>
+        </div>
+      </section>
+
+      <section class="panel chart" id="gapPanel">
+        <h2>Distance Gap Over Time</h2>
+        <svg id="gapChart" viewBox="0 0 320 150" aria-label="Gap chart"></svg>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-line" style="border-top-color: var(--tebogo);"></span>Tebogo ahead</span>
+          <span class="legend-item"><span class="legend-line" style="border-top-color: var(--bolt);"></span>Bolt ahead</span>
+        </div>
+      </section>
+
+      <section class="panel" id="splitPanel">
+        <h2>10m Split Table</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Dist</th>
+                <th class="bolt-text">Bolt Cum</th>
+                <th class="bolt-text">Bolt Seg</th>
+                <th class="tebogo-text">Tebogo Cum</th>
+                <th class="tebogo-text">Tebogo Seg</th>
+                <th>Gap</th>
+              </tr>
+            </thead>
+            <tbody id="splitBody"></tbody>
+          </table>
+        </div>
+        <div class="table-note" style="margin-top: 10px;">
+          Highlighted Bolt rows at 50m, 100m, 150m, and 200m are the direct official anchors. All other Bolt 10m rows are interpolated under those constraints.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Research Notes</h2>
+        <h3>Bolt model</h3>
+        <div class="panel-note">
+          Built from Berlin 2009 official result and World Athletics biomechanics reporting: reaction 0.133, 50m 5.60, 100m 9.92, 150m 14.44, 200m 19.19, plus published step-length / step-frequency trends.
+        </div>
+        <h3 style="margin-top: 12px;">Tebogo model</h3>
+        <div class="panel-note">
+          Baseline is the official Paris 2024 race-analysis PDF with 10m cumulative times through 200m. The 19.18 line trims 0.10 through 100m and 0.18 in the second half, keeping his observed back-half bias from Budapest 2023, Paris 2024, and Tokyo 2025.
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const DISTANCES = Array.from({ length: 20 }, (_, index) => (index + 1) * 10);
+      const TRACK = {
+        laneWidth: 1.22,
+        innerRadius: 36.5,
+        straightLength: 84.39,
+        raceCurveLength: 115.61,
+        finishX: 84.39,
+        endAngle: Math.PI / 2,
+        lanes: 8
+      };
+      TRACK.fullStartAngle = TRACK.endAngle + (TRACK.raceCurveLength / (TRACK.innerRadius + TRACK.laneWidth * 0.5));
+
+      const CAMERA_DEBUG = {
+        CAMERA_X: 47.5,
+        CAMERA_Y: 34,
+        CAMERA_Z: 92,
+        TRACK_CAMERA_Y: 19,
+        TRACK_CAMERA_Z: 66,
+        START_FOV: 48,
+        FINISH_FOV: 27,
+        FINISH_MODE_FOV: 23,
+        CAMERA_SCREEN_CENTER_X: 0.52,
+        CAMERA_SCREEN_CENTER_Y: 0.58,
+        LEADER_SCREEN_X_TARGET: 0.67,
+        LOOKBACK_OFFSET: 8.5,
+        LOOKBACK_OFFSET_FINISH: 15.5,
+        PACK_BLEND_BEND: 0.42,
+        PACK_BLEND_STRAIGHT: 0.18,
+        PAN_DAMPING: 0.085,
+        TILT_DAMPING: 0.075,
+        FOV_DAMPING: 0.07,
+        STRAIGHT_TRACK_START: 0.1,
+        STRAIGHT_TRACK_FULL: 0.28,
+        FINISH_SETTLE_START: 0.68,
+        FINISH_SETTLE_FULL: 0.97,
+        TRACK_FRONT_OFFSET: 18,
+        FINISH_FRONT_OFFSET: 7,
+        TRACK_X_MIN: 18,
+        TRACK_DAMPING: 0.095,
+        TRACK_FINISH_DAMPING: 0.14,
+        FINISH_LINE_LOOK_Z: 42
+      };
+
+      const BROADCAST_CAMERA_POSITION = {
+        x: CAMERA_DEBUG.CAMERA_X,
+        y: CAMERA_DEBUG.CAMERA_Y,
+        z: CAMERA_DEBUG.CAMERA_Z
+      };
+
+      const athletes = [
+        {
+          id: "bolt",
+          name: "Usain Bolt",
+          shortName: "Bolt",
+          lane: 5,
+          finish: 19.19,
+          reaction: 0.133,
+          color: "#fcd116",
+          softColor: "rgba(252, 209, 22, 0.18)",
+          outline: "rgba(252, 209, 22, 0.58)",
+          cumulative10: [1.85, 2.87, 3.83, 4.73, 5.60, 6.44, 7.28, 8.14, 9.02, 9.92, 10.80, 11.69, 12.59, 13.50, 14.44, 15.36, 16.30, 17.25, 18.21, 19.19],
+          directAnchors: new Set([50, 100, 150, 200])
+        },
+        {
+          id: "tebogo",
+          name: "Letsile Tebogo",
+          shortName: "Tebogo",
+          lane: 7,
+          finish: 19.18,
+          reaction: 0.162,
+          color: "#75aadb",
+          softColor: "rgba(117, 170, 219, 0.18)",
+          outline: "rgba(117, 170, 219, 0.58)",
+          cumulative10: [1.90, 2.94, 3.88, 4.77, 5.64, 6.51, 7.38, 8.24, 9.13, 10.02, 10.91, 11.81, 12.70, 13.60, 14.50, 15.41, 16.33, 17.26, 18.21, 19.18],
+          directAnchors: new Set()
+        }
+      ];
+
+      const maxRaceTime = Math.max(...athletes.map((athlete) => athlete.finish));
+      const curveEntryDistance = TRACK.raceCurveLength;
+
+      const elements = {
+        canvas: document.getElementById("raceCanvas"),
+        liveTime: document.getElementById("liveTime"),
+        leaderText: document.getElementById("leaderText"),
+        gapText: document.getElementById("gapText"),
+        phaseText: document.getElementById("phaseText"),
+        playPause: document.getElementById("playPause"),
+        replay: document.getElementById("replay"),
+        topReplay: document.getElementById("topReplay"),
+        stepBack: document.getElementById("stepBack"),
+        stepForward: document.getElementById("stepForward"),
+        speedSelect: document.getElementById("speedSelect"),
+        cameraMode: document.getElementById("cameraMode"),
+        timeline: document.getElementById("timeline"),
+        toggleMarkers: document.getElementById("toggleMarkers"),
+        toggleVelocity: document.getElementById("toggleVelocity"),
+        toggleGap: document.getElementById("toggleGap"),
+        toggleTable: document.getElementById("toggleTable"),
+        toggleEventCard: document.getElementById("toggleEventCard"),
+        toggleLiveCard: document.getElementById("toggleLiveCard"),
+        toggleTimelinePanel: document.getElementById("toggleTimelinePanel"),
+        velocityPanel: document.getElementById("velocityPanel"),
+        gapPanel: document.getElementById("gapPanel"),
+        splitPanel: document.getElementById("splitPanel"),
+        eventCard: document.getElementById("eventCard"),
+        liveCard: document.getElementById("liveCard"),
+        timelinePanel: document.getElementById("timelinePanel"),
+        splitBody: document.getElementById("splitBody"),
+        tagBolt: document.getElementById("tagBolt"),
+        tagTebogo: document.getElementById("tagTebogo"),
+        tagBoltDistance: document.getElementById("tagBoltDistance"),
+        tagBoltVelocity: document.getElementById("tagBoltVelocity"),
+        tagTebogoDistance: document.getElementById("tagTebogoDistance"),
+        tagTebogoVelocity: document.getElementById("tagTebogoVelocity"),
+        velocityChart: document.getElementById("velocityChart"),
+        gapChart: document.getElementById("gapChart"),
+        fiftyLead: document.getElementById("fiftyLead"),
+        oneFiftyLead: document.getElementById("oneFiftyLead"),
+        distanceGapLive: document.getElementById("distanceGapLive"),
+        crossoverText: document.getElementById("crossoverText"),
+        boltHalf: document.getElementById("boltHalf"),
+        tebogoHalf: document.getElementById("tebogoHalf"),
+        boltSecondHalf: document.getElementById("boltSecondHalf"),
+        tebogoSecondHalf: document.getElementById("tebogoSecondHalf")
+      };
+
+      const ctx = elements.canvas.getContext("2d");
+
+      const state = {
+        width: 0,
+        height: 0,
+        dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2)),
+        playing: true,
+        time: 0,
+        speed: 1,
+        lastTimestamp: performance.now(),
+        cameraMode: "tv",
+        showMarkers: true,
+        showVelocity: true,
+        showGap: true,
+        showTable: true,
+        cameraPosition: { ...BROADCAST_CAMERA_POSITION },
+        cameraLookAt: { x: 12, y: 1.2, z: 8 },
+        cameraFov: degToRad(CAMERA_DEBUG.START_FOV),
+        runnerScreen: {
+          bolt: { x: -1000, y: -1000 },
+          tebogo: { x: -1000, y: -1000 }
+        }
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function inverseLerp(a, b, value) {
+        if (a === b) {
+          return 0;
+        }
+        return clamp((value - a) / (b - a), 0, 1);
+      }
+
+      function mix(a, b, t) {
+        return {
+          x: lerp(a.x, b.x, t),
+          y: lerp(a.y, b.y, t),
+          z: lerp(a.z, b.z, t)
+        };
+      }
+
+      function smoothstep(edge0, edge1, value) {
+        const amount = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+        return amount * amount * (3 - 2 * amount);
+      }
+
+      function formatTime(value) {
+        return value.toFixed(2);
+      }
+
+      function formatMeters(value) {
+        return `${value.toFixed(2)} m`;
+      }
+
+      function formatVelocity(value) {
+        return `${value.toFixed(2)} m/s`;
+      }
+
+      function segmentsFromCumulative(cumulative) {
+        return cumulative.map((value, index) => value - (index ? cumulative[index - 1] : 0));
+      }
+
+      function midpoint(a, b) {
+        return {
+          x: (a.x + b.x) * 0.5,
+          y: (a.y + b.y) * 0.5,
+          z: (a.z + b.z) * 0.5
+        };
+      }
+
+      function magnitude(vector) {
+        return Math.hypot(vector.x, vector.y, vector.z);
+      }
+
+      function normalize(vector) {
+        const length = magnitude(vector) || 1;
+        return {
+          x: vector.x / length,
+          y: vector.y / length,
+          z: vector.z / length
+        };
+      }
+
+      function dot(a, b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+      }
+
+      function cross(a, b) {
+        return {
+          x: a.y * b.z - a.z * b.y,
+          y: a.z * b.x - a.x * b.z,
+          z: a.x * b.y - a.y * b.x
+        };
+      }
+
+      function add(a, b) {
+        return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+      }
+
+      function subtract(a, b) {
+        return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+      }
+
+      function scale(vector, amount) {
+        return { x: vector.x * amount, y: vector.y * amount, z: vector.z * amount };
+      }
+
+      function pointFromBasis(origin, tangent, up, outward, along = 0, vertical = 0, lateral = 0) {
+        return add(origin, add(scale(tangent, along), add(scale(up, vertical), scale(outward, lateral))));
+      }
+
+      function laneCenterRadius(lane) {
+        return TRACK.innerRadius + TRACK.laneWidth * (lane - 0.5);
+      }
+
+      function laneBoundaryRadius(index) {
+        return TRACK.innerRadius + TRACK.laneWidth * index;
+      }
+
+      function prepareAthlete(athlete) {
+        athlete.segment10 = segmentsFromCumulative(athlete.cumulative10);
+        athlete.halfSplit = athlete.cumulative10[9];
+        athlete.secondHalf = athlete.finish - athlete.halfSplit;
+        athlete.radius = laneCenterRadius(athlete.lane);
+        athlete.startAngle = TRACK.endAngle + (TRACK.raceCurveLength / athlete.radius);
+        const pchipX = [athlete.reaction, ...athlete.cumulative10];
+        const pchipY = [0, ...DISTANCES];
+        athlete.distanceCurve = createPchip(pchipX, pchipY);
+      }
+
+      function resetBroadcastCamera() {
+        const startA = tangentAndPointForDistance(athletes[0], 0);
+        const startB = tangentAndPointForDistance(athletes[1], 0);
+        const openingLook = midpoint(startA.point, startB.point);
+        state.cameraPosition = { ...BROADCAST_CAMERA_POSITION };
+        state.cameraLookAt = {
+          x: openingLook.x + 3,
+          y: 1.15,
+          z: openingLook.z + 4
+        };
+        state.cameraFov = degToRad(CAMERA_DEBUG.START_FOV);
+      }
+
+      function createPchip(xValues, yValues) {
+        const size = xValues.length;
+        const h = new Array(size - 1);
+        const delta = new Array(size - 1);
+        const slopes = new Array(size);
+
+        for (let index = 0; index < size - 1; index += 1) {
+          h[index] = xValues[index + 1] - xValues[index];
+          delta[index] = (yValues[index + 1] - yValues[index]) / h[index];
+        }
+
+        slopes[0] = endpointSlope(h[0], h[1] || h[0], delta[0], delta[1] || delta[0]);
+        for (let index = 1; index < size - 1; index += 1) {
+          if (delta[index - 1] === 0 || delta[index] === 0 || delta[index - 1] * delta[index] < 0) {
+            slopes[index] = 0;
+          } else {
+            const weightA = 2 * h[index] + h[index - 1];
+            const weightB = h[index] + 2 * h[index - 1];
+            slopes[index] = (weightA + weightB) / ((weightA / delta[index - 1]) + (weightB / delta[index]));
+          }
+        }
+        slopes[size - 1] = endpointSlope(
+          h[size - 2],
+          h[size - 3] || h[size - 2],
+          delta[size - 2],
+          delta[size - 3] || delta[size - 2]
+        );
+
+        return { x: xValues, y: yValues, m: slopes };
+      }
+
+      function endpointSlope(h0, h1, delta0, delta1) {
+        let slope = ((2 * h0 + h1) * delta0 - h0 * delta1) / (h0 + h1);
+        if (Math.sign(slope) !== Math.sign(delta0)) {
+          slope = 0;
+        } else if ((Math.sign(delta0) !== Math.sign(delta1)) && Math.abs(slope) > Math.abs(3 * delta0)) {
+          slope = 3 * delta0;
+        }
+        return slope;
+      }
+
+      function evaluatePchip(curve, t) {
+        const xValues = curve.x;
+        const yValues = curve.y;
+        const slopes = curve.m;
+        const lastIndex = xValues.length - 1;
+
+        if (t <= xValues[0]) {
+          return { value: yValues[0], derivative: 0 };
+        }
+        if (t >= xValues[lastIndex]) {
+          return { value: yValues[lastIndex], derivative: 0 };
+        }
+
+        let index = 0;
+        while (index < lastIndex - 1 && t > xValues[index + 1]) {
+          index += 1;
+        }
+
+        const x0 = xValues[index];
+        const x1 = xValues[index + 1];
+        const h = x1 - x0;
+        const u = (t - x0) / h;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const y0 = yValues[index];
+        const y1 = yValues[index + 1];
+        const m0 = slopes[index];
+        const m1 = slopes[index + 1];
+
+        const h00 = 2 * u3 - 3 * u2 + 1;
+        const h10 = u3 - 2 * u2 + u;
+        const h01 = -2 * u3 + 3 * u2;
+        const h11 = u3 - u2;
+
+        const value = h00 * y0 + h10 * h * m0 + h01 * y1 + h11 * h * m1;
+
+        const dh00 = 6 * u2 - 6 * u;
+        const dh10 = 3 * u2 - 4 * u + 1;
+        const dh01 = -6 * u2 + 6 * u;
+        const dh11 = 3 * u2 - 2 * u;
+        const derivative = (dh00 * y0 + dh10 * h * m0 + dh01 * y1 + dh11 * h * m1) / h;
+
+        return { value, derivative };
+      }
+
+      function distanceAt(athlete, time) {
+        if (time <= athlete.reaction) {
+          return 0;
+        }
+        if (time >= athlete.finish) {
+          return 200;
+        }
+        return evaluatePchip(athlete.distanceCurve, time).value;
+      }
+
+      function speedAt(athlete, time) {
+        if (time <= athlete.reaction || time >= athlete.finish) {
+          return 0;
+        }
+        return evaluatePchip(athlete.distanceCurve, time).derivative;
+      }
+
+      function tangentAndPointForDistance(athlete, distance) {
+        const d = clamp(distance, 0, 200);
+        const radius = athlete.radius;
+
+        if (d <= TRACK.raceCurveLength) {
+          const angle = athlete.startAngle - (d / radius);
+          const point = { x: Math.cos(angle) * radius, y: 0, z: Math.sin(angle) * radius };
+          const tangent = normalize({ x: Math.sin(angle), y: 0, z: -Math.cos(angle) });
+          const outward = normalize({ x: Math.cos(angle), y: 0, z: Math.sin(angle) });
+          return { point, tangent, outward, angle, onCurve: true };
+        }
+
+        const straightDistance = d - TRACK.raceCurveLength;
+        return {
+          point: { x: straightDistance, y: 0, z: radius },
+          tangent: { x: 1, y: 0, z: 0 },
+          outward: { x: 0, y: 0, z: 1 },
+          angle: TRACK.endAngle,
+          onCurve: false
+        };
+      }
+
+      function getCamera() {
+        const distanceA = distanceAt(athletes[0], state.time);
+        const distanceB = distanceAt(athletes[1], state.time);
+        const runnerA = tangentAndPointForDistance(athletes[0], distanceA);
+        const runnerB = tangentAndPointForDistance(athletes[1], distanceB);
+        const leader = distanceA >= distanceB
+          ? { athlete: athletes[0], distance: distanceA, ...runnerA }
+          : { athlete: athletes[1], distance: distanceB, ...runnerB };
+        const chaser = leader.athlete.id === athletes[0].id
+          ? { athlete: athletes[1], distance: distanceB, ...runnerB }
+          : { athlete: athletes[0], distance: distanceA, ...runnerA };
+        const packDistance = (distanceA + distanceB) * 0.5;
+        const progress = clamp(leader.distance / 200, 0, 1);
+        const transitionPulse = smoothstep(0.44, 0.59, progress) - smoothstep(0.59, 0.79, progress);
+        const straightProgress = inverseLerp(curveEntryDistance, 200, packDistance);
+
+        if (state.cameraMode === "tactical") {
+          return {
+            kind: "orthographic",
+            target: add(midpoint(runnerA.point, runnerB.point), { x: 8, y: 0, z: 0 }),
+            right: { x: 1, y: 0, z: 0 },
+            up: { x: 0, y: 0, z: -1 },
+            scale: Math.min(state.width / 132, state.height / 106),
+            centerX: state.width * 0.48,
+            centerY: state.height * 0.54
+          };
+        }
+
+        const packMid = midpoint(leader.point, chaser.point);
+        const homeTrackBlend = smoothstep(CAMERA_DEBUG.STRAIGHT_TRACK_START, CAMERA_DEBUG.STRAIGHT_TRACK_FULL, straightProgress);
+        const finishSettleBlend = smoothstep(CAMERA_DEBUG.FINISH_SETTLE_START, CAMERA_DEBUG.FINISH_SETTLE_FULL, straightProgress);
+
+        const bendLookbackBase = lerp(
+          CAMERA_DEBUG.LOOKBACK_OFFSET,
+          CAMERA_DEBUG.LOOKBACK_OFFSET_FINISH,
+          smoothstep(0.18, 0.94, progress)
+        );
+        const bendLookback = bendLookbackBase * (CAMERA_DEBUG.LEADER_SCREEN_X_TARGET / 0.67);
+        const bendLeaderFocus = add(leader.point, scale(leader.tangent, -bendLookback));
+        const bendPackBlend = lerp(
+          CAMERA_DEBUG.PACK_BLEND_BEND,
+          CAMERA_DEBUG.PACK_BLEND_STRAIGHT,
+          smoothstep(0.18, 0.88, progress)
+        );
+        const bendLookAt = mix(
+          { x: bendLeaderFocus.x, y: 1.15, z: bendLeaderFocus.z },
+          { x: packMid.x, y: 1.0, z: packMid.z },
+          bendPackBlend
+        );
+        bendLookAt.y = lerp(bendLookAt.y, 1.45, smoothstep(0.55, 1, progress));
+
+        const trackingX = lerp(
+          CAMERA_DEBUG.TRACK_X_MIN,
+          TRACK.finishX + CAMERA_DEBUG.FINISH_FRONT_OFFSET,
+          straightProgress
+        );
+        const trackPosition = {
+          x: lerp(trackingX, TRACK.finishX + CAMERA_DEBUG.FINISH_FRONT_OFFSET, finishSettleBlend),
+          y: CAMERA_DEBUG.TRACK_CAMERA_Y,
+          z: CAMERA_DEBUG.TRACK_CAMERA_Z
+        };
+        const desiredPosition = mix(BROADCAST_CAMERA_POSITION, trackPosition, homeTrackBlend);
+
+        const finishBandCenterZ = (athletes[0].radius + athletes[1].radius) * 0.5;
+        const finishLookZ = lerp(finishBandCenterZ, CAMERA_DEBUG.FINISH_LINE_LOOK_Z, 0.5);
+        const trackingLookAt = {
+          x: lerp(packMid.x - 3.5, TRACK.finishX - 0.5, finishSettleBlend),
+          y: lerp(1.5, 1.3, finishSettleBlend),
+          z: lerp(packMid.z, finishLookZ, 0.55 + finishSettleBlend * 0.35)
+        };
+        const desiredLookAt = mix(bendLookAt, trackingLookAt, homeTrackBlend);
+
+        const trackDamping = lerp(CAMERA_DEBUG.PAN_DAMPING, CAMERA_DEBUG.TRACK_DAMPING, homeTrackBlend) + transitionPulse * 0.05;
+        const finishPositionDamping = lerp(trackDamping, CAMERA_DEBUG.TRACK_FINISH_DAMPING, finishSettleBlend);
+        const tiltDamping = lerp(CAMERA_DEBUG.TILT_DAMPING, CAMERA_DEBUG.TILT_DAMPING * 0.9, homeTrackBlend) + transitionPulse * 0.03;
+
+        state.cameraPosition.x = lerp(state.cameraPosition.x, desiredPosition.x, finishPositionDamping);
+        state.cameraPosition.y = lerp(state.cameraPosition.y, desiredPosition.y, lerp(0.06, 0.1, homeTrackBlend));
+        state.cameraPosition.z = lerp(state.cameraPosition.z, desiredPosition.z, lerp(0.055, 0.09, homeTrackBlend));
+
+        state.cameraLookAt.x = lerp(state.cameraLookAt.x, desiredLookAt.x, trackDamping);
+        state.cameraLookAt.z = lerp(state.cameraLookAt.z, desiredLookAt.z, trackDamping);
+        state.cameraLookAt.y = lerp(state.cameraLookAt.y, desiredLookAt.y, tiltDamping);
+
+        const bendFov = state.cameraMode === "finish" ? CAMERA_DEBUG.START_FOV - 2 : CAMERA_DEBUG.START_FOV;
+        const trackFov = state.cameraMode === "finish"
+          ? lerp(CAMERA_DEBUG.FINISH_FOV, CAMERA_DEBUG.FINISH_MODE_FOV + 1.2, finishSettleBlend)
+          : lerp(CAMERA_DEBUG.FINISH_FOV + 2.5, CAMERA_DEBUG.FINISH_MODE_FOV + 3.5, finishSettleBlend);
+        const targetFov = lerp(bendFov, trackFov, homeTrackBlend);
+        state.cameraFov = lerp(state.cameraFov, degToRad(targetFov), CAMERA_DEBUG.FOV_DAMPING);
+
+        return buildPerspectiveCamera(state.cameraPosition, state.cameraLookAt, state.cameraFov);
+      }
+
+      function degToRad(degrees) {
+        return degrees * (Math.PI / 180);
+      }
+
+      function buildPerspectiveCamera(position, lookAt, fovRadians) {
+        const forward = normalize({
+          x: lookAt.x - position.x,
+          y: lookAt.y - position.y,
+          z: lookAt.z - position.z
+        });
+        let right = cross(forward, { x: 0, y: 1, z: 0 });
+        if (magnitude(right) < 1e-5) {
+          right = { x: 1, y: 0, z: 0 };
+        }
+        right = normalize(right);
+        const up = normalize(cross(right, forward));
+        return {
+          kind: "perspective",
+          position,
+          lookAt,
+          forward,
+          right,
+          up,
+          focalLength: (state.width * 0.5) / Math.tan(fovRadians * 0.5),
+          centerX: state.width * CAMERA_DEBUG.CAMERA_SCREEN_CENTER_X,
+          centerY: state.height * CAMERA_DEBUG.CAMERA_SCREEN_CENTER_Y
+        };
+      }
+
+      function project(point, camera) {
+        if (camera.kind === "orthographic") {
+          const relative = {
+            x: point.x - camera.target.x,
+            y: point.y - camera.target.y,
+            z: point.z - camera.target.z
+          };
+          return {
+            x: camera.centerX + dot(relative, camera.right) * camera.scale,
+            y: camera.centerY - dot(relative, camera.up) * camera.scale,
+            depth: 0,
+            scale: 1,
+            visible: true
+          };
+        }
+
+        const relative = {
+          x: point.x - camera.position.x,
+          y: point.y - camera.position.y,
+          z: point.z - camera.position.z
+        };
+        const cameraX = dot(relative, camera.right);
+        const cameraY = dot(relative, camera.up);
+        const cameraZ = dot(relative, camera.forward);
+        const safeDepth = Math.max(0.01, cameraZ);
+        const scaleValue = camera.focalLength / safeDepth;
+        return {
+          x: camera.centerX + cameraX * scaleValue,
+          y: camera.centerY - cameraY * scaleValue,
+          depth: cameraZ,
+          scale: scaleValue,
+          visible: cameraZ > 0.01
+        };
+      }
+
+      function drawScene(camera) {
+        ctx.clearRect(0, 0, state.width, state.height);
+        drawSky();
+        drawStands(camera);
+        drawTrack(camera);
+        const runners = athletes.map((athlete) => {
+          const distance = distanceAt(athlete, state.time);
+          const speed = speedAt(athlete, state.time);
+          const world = tangentAndPointForDistance(athlete, distance);
+          return { athlete, distance, speed, world, projectedBase: project(world.point, camera) };
+        });
+
+        drawShadows(runners, camera);
+        runners.sort((left, right) => right.projectedBase.depth - left.projectedBase.depth);
+        runners.forEach((runner) => drawRunner(runner, camera));
+        drawTrackCallouts(camera);
+        runners.forEach((runner) => updateTag(runner, camera));
+      }
+
+      function drawSky() {
+        const sky = ctx.createLinearGradient(0, 0, 0, state.height);
+        sky.addColorStop(0, "#2a363a");
+        sky.addColorStop(0.32, "#182124");
+        sky.addColorStop(1, "#101719");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, state.width, state.height);
+      }
+
+      function buildHalfTrackPolygon(innerRadius, outerRadius, startAngle) {
+        const outer = [];
+        const inner = [];
+        const samples = 120;
+
+        for (let index = 0; index <= samples; index += 1) {
+          const t = index / samples;
+          const angle = startAngle - (startAngle - TRACK.endAngle) * t;
+          outer.push({ x: Math.cos(angle) * outerRadius, y: 0, z: Math.sin(angle) * outerRadius });
+        }
+        outer.push({ x: TRACK.finishX, y: 0, z: outerRadius });
+        outer.push({ x: TRACK.finishX, y: 0, z: innerRadius });
+        for (let index = samples; index >= 0; index -= 1) {
+          const t = index / samples;
+          const angle = startAngle - (startAngle - TRACK.endAngle) * t;
+          inner.push({ x: Math.cos(angle) * innerRadius, y: 0, z: Math.sin(angle) * innerRadius });
+        }
+        return outer.concat(inner);
+      }
+
+      function drawProjectedPolygon(points, camera, fillStyle, strokeStyle, lineWidth) {
+        if (!points.length) {
+          return;
+        }
+        ctx.beginPath();
+        const first = project(points[0], camera);
+        ctx.moveTo(first.x, first.y);
+        for (let index = 1; index < points.length; index += 1) {
+          const point = project(points[index], camera);
+          ctx.lineTo(point.x, point.y);
+        }
+        ctx.closePath();
+        if (fillStyle) {
+          ctx.fillStyle = fillStyle;
+          ctx.fill();
+        }
+        if (strokeStyle) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineWidth;
+          ctx.stroke();
+        }
+      }
+
+      function drawStands(camera) {
+        const outerApron = buildHalfTrackPolygon(
+          laneBoundaryRadius(0) - 6,
+          laneBoundaryRadius(TRACK.lanes) + 18,
+          TRACK.fullStartAngle + 0.16
+        );
+        const standBand = buildHalfTrackPolygon(
+          laneBoundaryRadius(TRACK.lanes) + 8,
+          laneBoundaryRadius(TRACK.lanes) + 32,
+          TRACK.fullStartAngle + 0.3
+        );
+        drawProjectedPolygon(outerApron, camera, "rgba(88, 97, 94, 0.18)", null, 0);
+        drawProjectedPolygon(standBand, camera, "rgba(132, 142, 138, 0.16)", "rgba(255,255,255,0.03)", 1);
+
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.04)";
+        for (let ring = 0; ring < 7; ring += 1) {
+          const radiusA = laneBoundaryRadius(TRACK.lanes) + 10 + ring * 2.2;
+          const radiusB = radiusA + 0.85;
+          const band = buildHalfTrackPolygon(radiusA, radiusB, TRACK.fullStartAngle + 0.24);
+          drawProjectedPolygon(band, camera, ctx.fillStyle, null, 0);
+        }
+        ctx.restore();
+      }
+
+      function drawTrack(camera) {
+        const trackPolygon = buildHalfTrackPolygon(laneBoundaryRadius(0), laneBoundaryRadius(TRACK.lanes), TRACK.fullStartAngle);
+        const turfField = [
+          { x: -78, y: 0, z: -8 },
+          { x: 128, y: 0, z: -8 },
+          { x: 128, y: 0, z: 110 },
+          { x: -78, y: 0, z: 110 }
+        ];
+        drawProjectedPolygon(turfField, camera, "rgba(61, 98, 76, 0.92)", null, 0);
+        drawProjectedPolygon(trackPolygon, camera, "rgba(171, 75, 58, 0.96)", "rgba(255,255,255,0.08)", 1);
+
+        ctx.save();
+        for (let lane = 0; lane <= TRACK.lanes; lane += 1) {
+          const radius = laneBoundaryRadius(lane);
+          drawLaneLine(radius, camera, lane === 0 || lane === TRACK.lanes ? "rgba(255,255,255,0.48)" : "rgba(255,255,255,0.26)", lane === 0 || lane === TRACK.lanes ? 2.2 : 1.2);
+        }
+        drawFinishLine(camera);
+        drawStraightMarker(camera);
+        drawStartLines(camera);
+        if (state.showMarkers) {
+          drawDistanceMarkers(camera);
+        }
+        ctx.restore();
+      }
+
+      function drawLaneLine(radius, camera, color, lineWidth) {
+        const path = [];
+        const samples = 90;
+        for (let index = 0; index <= samples; index += 1) {
+          const t = index / samples;
+          const angle = TRACK.fullStartAngle - (TRACK.fullStartAngle - TRACK.endAngle) * t;
+          path.push({ x: Math.cos(angle) * radius, y: 0, z: Math.sin(angle) * radius });
+        }
+        path.push({ x: TRACK.finishX, y: 0, z: radius });
+        drawProjectedPolyline(path, camera, color, lineWidth, []);
+      }
+
+      function drawProjectedPolyline(points, camera, color, lineWidth, dash) {
+        if (!points.length) {
+          return;
+        }
+        ctx.beginPath();
+        const first = project(points[0], camera);
+        ctx.moveTo(first.x, first.y);
+        for (let index = 1; index < points.length; index += 1) {
+          const point = project(points[index], camera);
+          ctx.lineTo(point.x, point.y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.setLineDash(dash);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawFinishLine(camera) {
+        const start = project({ x: TRACK.finishX, y: 0, z: laneBoundaryRadius(0) }, camera);
+        const end = project({ x: TRACK.finishX, y: 0, z: laneBoundaryRadius(TRACK.lanes) }, camera);
+        ctx.strokeStyle = "rgba(255,255,255,0.92)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        const label = project({ x: TRACK.finishX + 3.2, y: 0, z: laneBoundaryRadius(TRACK.lanes) + 0.6 }, camera);
+        drawLabel(label.x, label.y, "Finish", "rgba(255,255,255,0.88)");
+      }
+
+      function drawStraightMarker(camera) {
+        const pointInner = tangentAndPointForDistance({ lane: 1, radius: laneCenterRadius(1), startAngle: TRACK.endAngle + (TRACK.raceCurveLength / laneCenterRadius(1)) }, TRACK.raceCurveLength);
+        const start = project({ x: pointInner.point.x, y: 0, z: laneBoundaryRadius(0) }, camera);
+        const end = project({ x: pointInner.point.x, y: 0, z: laneBoundaryRadius(TRACK.lanes) }, camera);
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const labelPoint = project({ x: pointInner.point.x + 2.4, y: 0, z: laneBoundaryRadius(0) - 1.6 }, camera);
+        drawLabel(labelPoint.x, labelPoint.y, "Straight entry 115.6m", "rgba(255,255,255,0.72)");
+      }
+
+      function drawStartLines(camera) {
+        athletes.forEach((athlete) => {
+          const geometry = tangentAndPointForDistance(athlete, 0);
+          const halfWidth = TRACK.laneWidth * 0.46;
+          const startA = add(geometry.point, scale(geometry.outward, -halfWidth));
+          const startB = add(geometry.point, scale(geometry.outward, halfWidth));
+          const projectedA = project(startA, camera);
+          const projectedB = project(startB, camera);
+
+          ctx.strokeStyle = athlete.outline;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(projectedA.x, projectedA.y);
+          ctx.lineTo(projectedB.x, projectedB.y);
+          ctx.stroke();
+
+          const label = project(add(geometry.point, add(scale(geometry.outward, 1.2), scale(geometry.tangent, -1.4))), camera);
+          drawLabel(label.x, label.y, `${athlete.shortName} L${athlete.lane}`, athlete.color);
+        });
+      }
+
+      function drawDistanceMarkers(camera) {
+        DISTANCES.forEach((distance, index) => {
+          athletes.forEach((athlete) => {
+            const geometry = tangentAndPointForDistance(athlete, distance);
+            const halfWidth = TRACK.laneWidth * 0.32;
+            const markerA = add(geometry.point, scale(geometry.outward, -halfWidth));
+            const markerB = add(geometry.point, scale(geometry.outward, halfWidth));
+            const projectedA = project(markerA, camera);
+            const projectedB = project(markerB, camera);
+
+            ctx.strokeStyle = distance % 50 === 0 ? "rgba(255,255,255,0.42)" : "rgba(255,255,255,0.18)";
+            ctx.lineWidth = distance % 50 === 0 ? 2 : 1;
+            ctx.beginPath();
+            ctx.moveTo(projectedA.x, projectedA.y);
+            ctx.lineTo(projectedB.x, projectedB.y);
+            ctx.stroke();
+          });
+
+          if (index % 2 === 0) {
+            const labelSource = tangentAndPointForDistance(athletes[0], distance);
+            const labelPoint = project(add(labelSource.point, scale(labelSource.outward, -3.4)), camera);
+            drawLabel(labelPoint.x, labelPoint.y, `${distance}`, "rgba(255,255,255,0.54)", true);
+          }
+        });
+      }
+
+      function drawTrackCallouts(camera) {
+        const startPoint = tangentAndPointForDistance(athletes[0], 0).point;
+        const curveLabel = project({ x: startPoint.x - 2, y: 0, z: startPoint.z + 8 }, camera);
+        const homeLabel = project({ x: TRACK.finishX - 30, y: 0, z: laneBoundaryRadius(TRACK.lanes) + 6 }, camera);
+        drawLabel(curveLabel.x, curveLabel.y, "Curve build", "rgba(255,255,255,0.46)");
+        drawLabel(homeLabel.x, homeLabel.y, "Home straight", "rgba(255,255,255,0.46)");
+      }
+
+      function drawLabel(x, y, text, color, compact = false) {
+        ctx.save();
+        ctx.font = compact ? "600 11px Avenir Next, Segoe UI, sans-serif" : "600 12px Avenir Next, Segoe UI, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(8, 12, 14, 0.72)";
+        const width = ctx.measureText(text).width + 12;
+        const height = compact ? 18 : 20;
+        roundRect(ctx, x - 6, y - height / 2, width, height, 10);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.fillText(text, x, y + 0.5);
+        ctx.restore();
+      }
+
+      function roundRect(context, x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        context.beginPath();
+        context.moveTo(x + r, y);
+        context.lineTo(x + width - r, y);
+        context.quadraticCurveTo(x + width, y, x + width, y + r);
+        context.lineTo(x + width, y + height - r);
+        context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        context.lineTo(x + r, y + height);
+        context.quadraticCurveTo(x, y + height, x, y + height - r);
+        context.lineTo(x, y + r);
+        context.quadraticCurveTo(x, y, x + r, y);
+        context.closePath();
+      }
+
+      function drawShadows(runners, camera) {
+        runners.forEach((runner) => {
+          const screen = runner.projectedBase || project(runner.world.point, camera);
+          const perspectiveScale = camera.kind === "perspective"
+            ? clamp(screen.scale / 12, 0.65, 1.35)
+            : 1;
+          ctx.fillStyle = runner.athlete.softColor;
+          ctx.beginPath();
+          ctx.ellipse(
+            screen.x + 3,
+            screen.y + 7,
+            18 * perspectiveScale,
+            7 * perspectiveScale,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        });
+      }
+
+      function drawRunner(runner, camera) {
+        const athlete = runner.athlete;
+        const ballCenter = add(runner.world.point, { x: 0, y: 0.42, z: 0 });
+        drawWorldCircle(ballCenter, 0.34, camera, athlete.color);
+
+        const screenPosition = project(ballCenter, camera);
+        state.runnerScreen[athlete.id] = screenPosition;
+
+        if (runner.distance >= 200) {
+          drawFinishBubble(athlete, camera);
+        }
+      }
+
+      function drawWorldCircle(center, radius, camera, color) {
+        const projectedCenter = project(center, camera);
+        const projectedEdge = project({ x: center.x + radius, y: center.y, z: center.z }, camera);
+        const projectedRadius = Math.max(2.5, Math.abs(projectedEdge.x - projectedCenter.x));
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(projectedCenter.x, projectedCenter.y, projectedRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawFinishBubble(athlete, camera) {
+        const laneRadius = athlete.radius;
+        const point = project({ x: TRACK.finishX + 2.2, y: 0, z: laneRadius + 0.5 }, camera);
+        ctx.save();
+        ctx.fillStyle = athlete.softColor;
+        roundRect(ctx, point.x - 6, point.y - 12, 78, 24, 10);
+        ctx.fill();
+        ctx.fillStyle = athlete.color;
+        ctx.font = "700 12px Avenir Next, Segoe UI, sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.fillText(athlete.finish.toFixed(2), point.x + 4, point.y + 0.5);
+        ctx.restore();
+      }
+
+      function updateTag(runner, camera) {
+        const athlete = runner.athlete;
+        const tag = athlete.id === "bolt" ? elements.tagBolt : elements.tagTebogo;
+        const screen = state.runnerScreen[athlete.id];
+        const offsetY = athlete.id === "bolt" ? -48 : -54;
+        tag.style.left = `${screen.x}px`;
+        tag.style.top = `${screen.y + offsetY}px`;
+        tag.style.opacity = screen.x < -100 ? "0" : "1";
+
+        if (athlete.id === "bolt") {
+          elements.tagBoltDistance.textContent = `${runner.distance.toFixed(1)} m`;
+          elements.tagBoltVelocity.textContent = formatVelocity(runner.speed);
+        } else {
+          elements.tagTebogoDistance.textContent = `${runner.distance.toFixed(1)} m`;
+          elements.tagTebogoVelocity.textContent = formatVelocity(runner.speed);
+        }
+      }
+
+      function updateUI() {
+        const bolt = athletes[0];
+        const tebogo = athletes[1];
+        const boltDistance = distanceAt(bolt, state.time);
+        const tebogoDistance = distanceAt(tebogo, state.time);
+        const boltSpeed = speedAt(bolt, state.time);
+        const tebogoSpeed = speedAt(tebogo, state.time);
+        const gapDistance = tebogoDistance - boltDistance;
+        const leader = Math.abs(gapDistance) < 0.03 ? "Level" : gapDistance > 0 ? "Tebogo" : "Bolt";
+
+        elements.liveTime.textContent = formatTime(state.time);
+        elements.leaderText.textContent = leader;
+        elements.gapText.textContent = leader === "Level" ? "Level" : formatMeters(Math.abs(gapDistance));
+        elements.distanceGapLive.textContent = `${gapDistance >= 0 ? "+" : ""}${gapDistance.toFixed(2)} m`;
+        elements.timeline.value = state.time.toFixed(2);
+
+        elements.playPause.textContent = state.playing ? "Pause" : "Play";
+
+        const gapAt50 = tebogo.cumulative10[4] - bolt.cumulative10[4];
+        const gapAt150 = tebogo.cumulative10[14] - bolt.cumulative10[14];
+        elements.fiftyLead.textContent = gapAt50 > 0 ? `Bolt +${gapAt50.toFixed(2)}s` : `Tebogo +${Math.abs(gapAt50).toFixed(2)}s`;
+        elements.oneFiftyLead.textContent = gapAt150 > 0 ? `Bolt +${gapAt150.toFixed(2)}s` : `Tebogo +${Math.abs(gapAt150).toFixed(2)}s`;
+
+        elements.phaseText.textContent = phaseDescription(state.time, boltDistance, tebogoDistance, gapDistance);
+
+        updateChartsCursor(state.time, boltSpeed, tebogoSpeed, gapDistance);
+        highlightSplitRow(state.time);
+      }
+
+      function phaseDescription(time, boltDistance, tebogoDistance, gapDistance) {
+        const leadName = gapDistance > 0 ? "Tebogo" : "Bolt";
+        const leadValue = Math.abs(gapDistance);
+        const furthest = Math.max(boltDistance, tebogoDistance);
+
+        if (time < 0.18) {
+          return "Waiting on the gun. Bolt reacts first on paper; Tebogo’s model is built to arrive later and harder.";
+        }
+        if (furthest < 30) {
+          return "Drive phase under stagger. Bolt’s longer lever pattern is rising later; Tebogo’s rhythm is slightly quicker but still compact.";
+        }
+        if (furthest < TRACK.raceCurveLength - 10) {
+          return `${leadName} has the better curve position right now by ${leadValue.toFixed(2)}m. Bolt’s bend advantage is most visible before straight entry.`;
+        }
+        if (furthest < 150) {
+          return `${leadName} still leads, but the straight is shifting the balance. Tebogo’s model starts to compress the gap after 120m.`;
+        }
+        if (furthest < 195) {
+          return `${leadName} is ${leadValue.toFixed(2)}m in front with the finish approaching. This is the zone where Tebogo’s hypothetical 9.16 second half does its work.`;
+        }
+        if (state.time < maxRaceTime) {
+          return "Photo-finish territory. Bolt keeps the edge almost all the way; Tebogo’s model reaches parity only at the very end.";
+        }
+        return "Finished. Bolt wins the bend and halfway, Tebogo wins the straight by just enough to take 19.18 to 19.19.";
+      }
+
+      function buildSplitTable() {
+        const bolt = athletes[0];
+        const tebogo = athletes[1];
+
+        elements.splitBody.innerHTML = DISTANCES.map((distance, index) => {
+          const boltCum = bolt.cumulative10[index];
+          const tebogoCum = tebogo.cumulative10[index];
+          const boltSeg = bolt.segment10[index];
+          const tebogoSeg = tebogo.segment10[index];
+          const gap = tebogoCum - boltCum;
+          const anchorClass = bolt.directAnchors.has(distance) ? "anchor" : "";
+          return `
+            <tr class="${anchorClass}" data-distance="${distance}">
+              <td>${distance}m</td>
+              <td class="bolt-text">${boltCum.toFixed(2)}</td>
+              <td class="bolt-text">${boltSeg.toFixed(2)}</td>
+              <td class="tebogo-text">${tebogoCum.toFixed(2)}</td>
+              <td class="tebogo-text">${tebogoSeg.toFixed(2)}</td>
+              <td>${gap >= 0 ? "+" : ""}${gap.toFixed(2)}s</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      function highlightSplitRow(time) {
+        const rows = elements.splitBody.querySelectorAll("tr");
+        const leadDistance = Math.max(...athletes.map((athlete) => distanceAt(athlete, time)));
+        const activeDistance = Math.max(10, Math.ceil(leadDistance / 10) * 10);
+        rows.forEach((row) => {
+          row.classList.toggle("active", Number(row.dataset.distance) === activeDistance);
+        });
+      }
+
+      function sampledSeries() {
+        const samples = [];
+        const total = 320;
+        for (let index = 0; index <= total; index += 1) {
+          const time = (index / total) * maxRaceTime;
+          const boltDistance = distanceAt(athletes[0], time);
+          const tebogoDistance = distanceAt(athletes[1], time);
+          samples.push({
+            time,
+            boltSpeed: speedAt(athletes[0], time),
+            tebogoSpeed: speedAt(athletes[1], time),
+            gap: tebogoDistance - boltDistance
+          });
+        }
+        return samples;
+      }
+
+      function buildCharts() {
+        const samples = sampledSeries();
+        const crossover = samples.find((sample) => sample.gap >= 0 && sample.time > 18.5);
+        elements.crossoverText.textContent = crossover ? `${distanceAt(athletes[1], crossover.time).toFixed(1)}m` : "At the line";
+
+        buildVelocityChart(samples);
+        buildGapChart(samples);
+      }
+
+      function buildVelocityChart(samples) {
+        const width = 320;
+        const height = 150;
+        const margin = { top: 14, right: 10, bottom: 26, left: 32 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const maxVelocity = 12.1;
+        const x = (time) => margin.left + (time / maxRaceTime) * plotWidth;
+        const y = (value) => margin.top + plotHeight - (value / maxVelocity) * plotHeight;
+
+        const boltPath = svgLine(samples.map((sample) => [x(sample.time), y(sample.boltSpeed)]));
+        const tebogoPath = svgLine(samples.map((sample) => [x(sample.time), y(sample.tebogoSpeed)]));
+
+        elements.velocityChart.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.10)" rx="12"></rect>
+          ${chartGrid(width, height, margin, plotWidth, plotHeight, maxVelocity, 4, maxRaceTime)}
+          <path d="${boltPath}" fill="none" stroke="var(--bolt)" stroke-width="3"></path>
+          <path d="${tebogoPath}" fill="none" stroke="var(--tebogo)" stroke-width="3"></path>
+          <line id="velocityCursor" x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${margin.top + plotHeight}" stroke="rgba(255,255,255,0.24)" stroke-width="1.5" stroke-dasharray="5 5"></line>
+          <circle id="velocityBoltDot" cx="${margin.left}" cy="${y(0)}" r="4" fill="var(--bolt)"></circle>
+          <circle id="velocityTebogoDot" cx="${margin.left}" cy="${y(0)}" r="4" fill="var(--tebogo)"></circle>
+        `;
+      }
+
+      function buildGapChart(samples) {
+        const width = 320;
+        const height = 150;
+        const margin = { top: 14, right: 10, bottom: 26, left: 32 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const maxAbsGap = 1.5;
+        const x = (time) => margin.left + (time / maxRaceTime) * plotWidth;
+        const y = (value) => margin.top + plotHeight - ((value + maxAbsGap) / (maxAbsGap * 2)) * plotHeight;
+        const zeroY = y(0);
+        const points = samples.map((sample) => [x(sample.time), y(sample.gap)]);
+        const path = svgLine(points);
+
+        elements.gapChart.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.10)" rx="12"></rect>
+          ${gapGrid(width, height, margin, plotWidth, plotHeight, maxAbsGap, maxRaceTime, zeroY)}
+          <path d="${path}" fill="none" stroke="#d7dfda" stroke-width="3"></path>
+          <line id="gapCursor" x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${margin.top + plotHeight}" stroke="rgba(255,255,255,0.24)" stroke-width="1.5" stroke-dasharray="5 5"></line>
+          <circle id="gapDot" cx="${margin.left}" cy="${zeroY}" r="4" fill="#d7dfda"></circle>
+        `;
+      }
+
+      function chartGrid(width, height, margin, plotWidth, plotHeight, maxVelocity, yTicks, maxTime) {
+        const lines = [];
+        for (let index = 0; index <= yTicks; index += 1) {
+          const value = (maxVelocity / yTicks) * index;
+          const y = margin.top + plotHeight - (value / maxVelocity) * plotHeight;
+          lines.push(`<line x1="${margin.left}" y1="${y}" x2="${margin.left + plotWidth}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-width="1"></line>`);
+          lines.push(`<text x="${margin.left - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.45)">${value.toFixed(0)}</text>`);
+        }
+        for (let index = 0; index <= 4; index += 1) {
+          const time = (maxTime / 4) * index;
+          const x = margin.left + (time / maxTime) * plotWidth;
+          lines.push(`<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + plotHeight}" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>`);
+          lines.push(`<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.45)">${time.toFixed(1)}s</text>`);
+        }
+        return lines.join("");
+      }
+
+      function gapGrid(width, height, margin, plotWidth, plotHeight, maxAbsGap, maxTime, zeroY) {
+        const lines = [`<line x1="${margin.left}" y1="${zeroY}" x2="${margin.left + plotWidth}" y2="${zeroY}" stroke="rgba(255,255,255,0.24)" stroke-width="1.5"></line>`];
+        for (let index = -1; index <= 1; index += 1) {
+          const value = index * maxAbsGap;
+          const y = margin.top + plotHeight - ((value + maxAbsGap) / (maxAbsGap * 2)) * plotHeight;
+          lines.push(`<line x1="${margin.left}" y1="${y}" x2="${margin.left + plotWidth}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"></line>`);
+          lines.push(`<text x="${margin.left - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.45)">${value.toFixed(1)}</text>`);
+        }
+        for (let index = 0; index <= 4; index += 1) {
+          const time = (maxTime / 4) * index;
+          const x = margin.left + (time / maxTime) * plotWidth;
+          lines.push(`<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + plotHeight}" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>`);
+          lines.push(`<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.45)">${time.toFixed(1)}s</text>`);
+        }
+        return lines.join("");
+      }
+
+      function svgLine(points) {
+        return points.map((point, index) => `${index === 0 ? "M" : "L"}${point[0].toFixed(2)},${point[1].toFixed(2)}`).join(" ");
+      }
+
+      function updateChartsCursor(time, boltSpeed, tebogoSpeed, gapDistance) {
+        const velocityWidth = 320;
+        const velocityMargin = { left: 32, right: 10, top: 14, bottom: 26 };
+        const velocityPlotWidth = velocityWidth - velocityMargin.left - velocityMargin.right;
+        const velocityPlotHeight = 150 - velocityMargin.top - velocityMargin.bottom;
+        const velocityMax = 12.1;
+        const cursorX = velocityMargin.left + (time / maxRaceTime) * velocityPlotWidth;
+        const boltY = velocityMargin.top + velocityPlotHeight - (boltSpeed / velocityMax) * velocityPlotHeight;
+        const tebogoY = velocityMargin.top + velocityPlotHeight - (tebogoSpeed / velocityMax) * velocityPlotHeight;
+
+        const velocityCursor = document.getElementById("velocityCursor");
+        const velocityBoltDot = document.getElementById("velocityBoltDot");
+        const velocityTebogoDot = document.getElementById("velocityTebogoDot");
+        if (velocityCursor && velocityBoltDot && velocityTebogoDot) {
+          velocityCursor.setAttribute("x1", cursorX.toFixed(2));
+          velocityCursor.setAttribute("x2", cursorX.toFixed(2));
+          velocityBoltDot.setAttribute("cx", cursorX.toFixed(2));
+          velocityBoltDot.setAttribute("cy", boltY.toFixed(2));
+          velocityTebogoDot.setAttribute("cx", cursorX.toFixed(2));
+          velocityTebogoDot.setAttribute("cy", tebogoY.toFixed(2));
+        }
+
+        const gapWidth = 320;
+        const gapMargin = { left: 32, right: 10, top: 14, bottom: 26 };
+        const gapPlotWidth = gapWidth - gapMargin.left - gapMargin.right;
+        const gapPlotHeight = 150 - gapMargin.top - gapMargin.bottom;
+        const maxAbsGap = 1.5;
+        const gapCursorX = gapMargin.left + (time / maxRaceTime) * gapPlotWidth;
+        const gapY = gapMargin.top + gapPlotHeight - ((gapDistance + maxAbsGap) / (maxAbsGap * 2)) * gapPlotHeight;
+        const gapCursor = document.getElementById("gapCursor");
+        const gapDot = document.getElementById("gapDot");
+        if (gapCursor && gapDot) {
+          gapCursor.setAttribute("x1", gapCursorX.toFixed(2));
+          gapCursor.setAttribute("x2", gapCursorX.toFixed(2));
+          gapDot.setAttribute("cx", gapCursorX.toFixed(2));
+          gapDot.setAttribute("cy", gapY.toFixed(2));
+        }
+      }
+
+      function resize() {
+        state.width = elements.canvas.clientWidth;
+        state.height = elements.canvas.clientHeight;
+        state.dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        elements.canvas.width = Math.max(1, Math.floor(state.width * state.dpr));
+        elements.canvas.height = Math.max(1, Math.floor(state.height * state.dpr));
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      }
+
+      function setTime(value) {
+        state.time = clamp(value, 0, maxRaceTime);
+      }
+
+      function step(delta) {
+        setTime(state.time + delta);
+        if (state.time >= maxRaceTime) {
+          state.playing = false;
+        }
+      }
+
+      function loop(timestamp) {
+        const deltaSeconds = Math.min(0.05, (timestamp - state.lastTimestamp) / 1000 || 0);
+        state.lastTimestamp = timestamp;
+
+        if (state.playing) {
+          step(deltaSeconds * state.speed);
+        }
+
+        const camera = getCamera();
+        drawScene(camera);
+        updateUI();
+        requestAnimationFrame(loop);
+      }
+
+      function bindEvents() {
+        elements.playPause.addEventListener("click", () => {
+          state.playing = !state.playing;
+        });
+
+        elements.topReplay.addEventListener("click", () => {
+          state.playing = true;
+          setTime(0);
+          resetBroadcastCamera();
+        });
+
+        elements.stepBack.addEventListener("click", () => {
+          state.playing = false;
+          step(-0.05);
+        });
+
+        elements.stepForward.addEventListener("click", () => {
+          state.playing = false;
+          step(0.05);
+        });
+
+        elements.speedSelect.addEventListener("change", () => {
+          state.speed = Number(elements.speedSelect.value);
+        });
+
+        elements.cameraMode.addEventListener("change", () => {
+          state.cameraMode = elements.cameraMode.value;
+        });
+
+        elements.timeline.addEventListener("input", () => {
+          state.playing = false;
+          setTime(Number(elements.timeline.value));
+        });
+
+        elements.toggleMarkers.addEventListener("change", () => {
+          state.showMarkers = elements.toggleMarkers.checked;
+        });
+
+        elements.toggleVelocity.addEventListener("change", () => {
+          state.showVelocity = elements.toggleVelocity.checked;
+          elements.velocityPanel.hidden = !state.showVelocity;
+        });
+
+        elements.toggleGap.addEventListener("change", () => {
+          state.showGap = elements.toggleGap.checked;
+          elements.gapPanel.hidden = !state.showGap;
+        });
+
+        elements.toggleTable.addEventListener("change", () => {
+          state.showTable = elements.toggleTable.checked;
+          elements.splitPanel.hidden = !state.showTable;
+        });
+
+        elements.toggleEventCard.addEventListener("change", () => {
+          elements.eventCard.classList.toggle("hidden", !elements.toggleEventCard.checked);
+        });
+
+        elements.toggleLiveCard.addEventListener("change", () => {
+          elements.liveCard.classList.toggle("hidden", !elements.toggleLiveCard.checked);
+        });
+
+        elements.toggleTimelinePanel.addEventListener("change", () => {
+          elements.timelinePanel.classList.toggle("hidden", !elements.toggleTimelinePanel.checked);
+        });
+
+        window.addEventListener("resize", resize);
+        window.addEventListener("keydown", (event) => {
+          if (event.code === "Space") {
+            event.preventDefault();
+            state.playing = !state.playing;
+          }
+          if (event.code === "ArrowRight") {
+            event.preventDefault();
+            state.playing = false;
+            step(0.05);
+          }
+          if (event.code === "ArrowLeft") {
+            event.preventDefault();
+            state.playing = false;
+            step(-0.05);
+          }
+        });
+      }
+
+      function initStaticLabels() {
+        elements.timeline.max = maxRaceTime.toFixed(2);
+        elements.boltHalf.textContent = athletes[0].halfSplit.toFixed(2);
+        elements.tebogoHalf.textContent = athletes[1].halfSplit.toFixed(2);
+        elements.boltSecondHalf.textContent = athletes[0].secondHalf.toFixed(2);
+        elements.tebogoSecondHalf.textContent = athletes[1].secondHalf.toFixed(2);
+        elements.timelinePanel.classList.add("hidden");
+        elements.toggleTimelinePanel.checked = false;
+      }
+
+      athletes.forEach(prepareAthlete);
+      resetBroadcastCamera();
+      resize();
+      bindEvents();
+      initStaticLabels();
+      buildSplitTable();
+      buildCharts();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
